@@ -88,7 +88,7 @@ weave_on() {
     host=$1
     shift 1
     [ -z "$DEBUG" ] || greyly echo "Weave on $host:$DOCKER_PORT: $@" >&2
-    DOCKER_HOST=tcp://$host:$DOCKER_PORT $WEAVE "$@"
+    CHECKPOINT_DISABLE=true DOCKER_HOST=tcp://$host:$DOCKER_PORT $WEAVE "$@"
 }
 
 exec_on() {
@@ -101,7 +101,7 @@ exec_on() {
 rm_containers() {
     host=$1
     shift
-    [ $# -eq 0 ] || docker_on $host rm -f "$@" >/dev/null
+    [ $# -eq 0 ] || docker_on $host rm -f -v "$@" >/dev/null
 }
 
 start_suite() {
@@ -111,7 +111,6 @@ start_suite() {
         PLUGIN_FILTER="cat"
         [ -n "$PLUGIN_ID" ] && PLUGIN_FILTER="grep -v $PLUGIN_ID"
         rm_containers $host $(docker_on $host ps -aq 2>/dev/null | $PLUGIN_FILTER)
-        run_on $host "docker network ls | grep -q ' weave ' && docker network rm weave" || true
         weave_on $host reset 2>/dev/null
     done
     whitely echo "$@"
@@ -120,6 +119,4 @@ start_suite() {
 end_suite() {
     whitely assert_end
 }
-
-WEAVE=$DIR/../weave
 
